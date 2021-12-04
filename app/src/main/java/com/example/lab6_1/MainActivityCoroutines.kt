@@ -6,8 +6,7 @@ import android.content.SharedPreferences
 import android.os.Bundle
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
-import java.util.concurrent.ExecutorService
-import java.util.concurrent.Executors
+import kotlinx.coroutines.*
 import kotlin.math.roundToLong
 
 class MainActivityCoroutines : AppCompatActivity() {
@@ -15,7 +14,8 @@ class MainActivityCoroutines : AppCompatActivity() {
     private var startTime: Long = 0
     private lateinit var textSecondsElapsed: TextView
     private lateinit var sharedPref: SharedPreferences
-    private var executor: ExecutorService = Executors.newSingleThreadExecutor()
+    private var count = false
+    private lateinit var coroutine: Job
 
     companion object {
         const val SECONDS_KEY = "seconds"
@@ -28,30 +28,31 @@ class MainActivityCoroutines : AppCompatActivity() {
         textSecondsElapsed = findViewById(R.id.textSecondsElapsed)
     }
 
+    @SuppressLint("SetTextI18n")
     override fun onStart() {
         super.onStart()
         baseTime = sharedPref.getLong(SECONDS_KEY, 0)
-        executor.submit(getRunnable())
+        count = true
+        coroutine = MainScope().launch {
+            while (count) {
+                delay(10)
+                textSecondsElapsed.post {
+                    textSecondsElapsed.text = "Seconds elapsed: " + getCurrentTimeToShow()
+                }
+            }
+        }
         startTime = System.currentTimeMillis()
     }
 
     override fun onStop() {
         super.onStop()
+        count = false
         with(sharedPref.edit()) {
             putLong(SECONDS_KEY, getCurrentTimeToShow())
             apply()
         }
     }
 
-    @SuppressLint("SetTextI18n")
-    private fun getRunnable() = Runnable {
-        while (!Thread.currentThread().isInterrupted) {
-            Thread.sleep(10)
-            textSecondsElapsed.post {
-                textSecondsElapsed.text = "Seconds elapsed: " + getCurrentTimeToShow()
-            }
-        }
-    }
 
     private fun getCurrentTimeToShow(): Long {
         return baseTime + ((System.currentTimeMillis() - startTime) / 1000.0).roundToLong()
