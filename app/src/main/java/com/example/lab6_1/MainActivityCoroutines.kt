@@ -17,10 +17,6 @@ class MainActivityCoroutines : AppCompatActivity() {
     private var count = false
     private lateinit var coroutine: Job
 
-    companion object {
-        const val SECONDS_KEY = "seconds"
-    }
-
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         sharedPref = getPreferences(Context.MODE_PRIVATE)
@@ -31,12 +27,12 @@ class MainActivityCoroutines : AppCompatActivity() {
     @SuppressLint("SetTextI18n")
     override fun onStart() {
         super.onStart()
-        baseTime = sharedPref.getLong(SECONDS_KEY, 0)
+        baseTime = sharedPref.getLong("seconds", 0)
         count = true
-        coroutine = MainScope().launch {
+        coroutine = CoroutineScope(Dispatchers.Default).launch {
             while (count) {
                 delay(10)
-                textSecondsElapsed.post {
+                MainScope().launch {
                     textSecondsElapsed.text = "Seconds elapsed: " + getCurrentTimeToShow()
                 }
             }
@@ -48,7 +44,7 @@ class MainActivityCoroutines : AppCompatActivity() {
         super.onStop()
         count = false
         with(sharedPref.edit()) {
-            putLong(SECONDS_KEY, getCurrentTimeToShow())
+            putLong("seconds", getCurrentTimeToShow())
             apply()
         }
     }

@@ -13,7 +13,6 @@ class MainActivityThread : AppCompatActivity() {
     private var startTime: Long = 0
     private lateinit var textSecondsElapsed: TextView
     private lateinit var sharedPref: SharedPreferences
-    private var isThreadLive = false
     private lateinit var backgroundThread: Thread
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -26,7 +25,6 @@ class MainActivityThread : AppCompatActivity() {
     override fun onStart() {
         super.onStart()
         baseTime = sharedPref.getLong("seconds", 0)
-        isThreadLive = true
         backgroundThread = getThread()
         backgroundThread.start()
         startTime = System.currentTimeMillis()
@@ -34,7 +32,7 @@ class MainActivityThread : AppCompatActivity() {
 
     override fun onStop() {
         super.onStop()
-        isThreadLive = false
+        backgroundThread.interrupt()
         with(sharedPref.edit()) {
             putLong("seconds", getCurrentTimeToShow())
             apply()
@@ -43,7 +41,7 @@ class MainActivityThread : AppCompatActivity() {
 
     @SuppressLint("SetTextI18n")
     private fun getThread() = Thread {
-        while (isThreadLive) {
+        while (!Thread.currentThread().isInterrupted) {
             Thread.sleep(10)
             textSecondsElapsed.post {
                 textSecondsElapsed.text = "Seconds elapsed: " + getCurrentTimeToShow()
